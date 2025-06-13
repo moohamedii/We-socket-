@@ -1,13 +1,6 @@
-{
-  "name": "websocket-server",
-  "version": "1.0.0",
-  "description": "Simple WebSocket server for BLS",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "ws": "^8.13.0"
-  }
+"dependencies": {
+  "express": "^4.18.2",
+  "ws": "^8.13.0",
+  "axios": "^1.6.7",
+  "cheerio": "^1.0.0-rc.12"
 }
