@@ -11,11 +11,10 @@ const wss = new WebSocket.Server({ server });
 
 // BLS settings
 const BLS_URL = 'https://morocco.blsportugal.com/MAR/bls/VisaApplicationStatus';
-const CHECK_INTERVAL = 15000; // 15 seconds
+const CHECK_INTERVAL = 15000; // check every 15 seconds
 
 // Telegram credentials
-const TELEGRAM_BOT_TOKEN = '7757985073:AAGl-mTTiBY50k-D6Cu0mVuSGpIbhtWZ4CI
-';
+const TELEGRAM_BOT_TOKEN = '7757985073:AAGl-mTTiBY50k-D6Cu0mVuSGpIbhtWZ4CI';
 const TELEGRAM_CHAT_ID = '845553854';
 
 const NEGATIVE_PATTERNS = [
@@ -28,25 +27,28 @@ const NEGATIVE_PATTERNS = [
 let clients = [];
 let lastAlertSent = false;
 
-// Send alert to Telegram
+// Send Telegram alert
 async function sendTelegramAlert(message) {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
   try {
-    await axios.post(url, { chat_id: TELEGRAM_CHAT_ID, text: message });
+    await axios.post(url, {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message
+    });
     console.log('✅ Telegram alert sent.');
   } catch (error) {
-    console.error('❌ Telegram error:', error.message);
+    console.error('❌ Failed to send Telegram alert:', error.message);
   }
 }
 
-// WebSocket connection handler
+// WebSocket connection
 wss.on('connection', (ws) => {
   console.log('🔌 WebSocket client connected.');
   clients.push(ws);
 
   ws.send(JSON.stringify({
     type: 'connected',
-    message: '🟢 BLS appointment monitor active.'
+    message: '🟢 BLS appointment monitor is active.'
   }));
 
   ws.on('close', () => {
@@ -55,7 +57,7 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Main logic: Check for available appointments
+// Check for appointment availability
 async function checkAppointments() {
   try {
     const response = await axios.get(BLS_URL, {
@@ -74,10 +76,10 @@ async function checkAppointments() {
       if (!lastAlertSent) {
         console.log('🚨 Appointment detected! Sending alerts...');
 
-        // Send Telegram alert
+        // Telegram alert
         await sendTelegramAlert(`🚨 BLS Visa appointment available!\n👉 ${BLS_URL}`);
 
-        // Send WebSocket message
+        // Notify WebSocket clients
         clients.forEach(ws => {
           ws.send(JSON.stringify({
             type: 'slot_available',
@@ -93,28 +95,27 @@ async function checkAppointments() {
       console.log('🔄 No appointments found.');
       lastAlertSent = false;
     }
-
   } catch (error) {
-    console.error('⚠️ Error checking BLS:', error.message);
+    console.error('⚠️ Error while checking BLS site:', error.message);
   }
 }
 
-// Periodic checker
+// Run checker periodically
 setInterval(checkAppointments, CHECK_INTERVAL);
 
-// Self-ping every 5 minutes to prevent sleep (for Render/Koyeb)
+// Self-ping every 5 minutes (for Render/Koyeb keep-alive)
 setInterval(() => {
   axios.get(`http://localhost:${PORT}`)
-    .then(() => console.log('🔁 Self-ping successful.'))
+    .then(() => console.log('🔁 Self-ping OK.'))
     .catch(err => console.log('⚠️ Self-ping failed:', err.message));
 }, 5 * 60 * 1000);
 
 // Root route
 app.get('/', (req, res) => {
-  res.send('🟢 BLS Appointment Monitor is live.');
+  res.send('🟢 BLS Appointment Monitor is running.');
 });
 
 // Start server
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
