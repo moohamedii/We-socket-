@@ -12,11 +12,24 @@ const wss = new WebSocket.Server({ server });
 
 let clients = [];
 
-// ✅ Telegram Bot Configuration
+// ✅ Telegram config
 const TELEGRAM_BOT_TOKEN = '7962715498:AAH2dZ7teT6m_n98nfxVW3mCkmIzrNeeYUo';
-const TELEGRAM_CHAT_ID = '8063543796'; // <- This is your Telegram chat ID
+const TELEGRAM_CHAT_ID = '8063543796';
 
-// 📩 Function to send Telegram messages
+// 🧠 Prevent duplicate notifications
+let lastAlertSent = false;
+
+// 🛑 List of phrases that mean NO appointments
+const NEGATIVE_PATTERNS = [
+  'no appointment',
+  'no slots available',
+  'not available',
+  'fully booked',
+  'currently unavailable',
+  'no appointments are available',
+  'not yet open'
+];
+
 async function sendTelegramMessage(message) {
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     try {
@@ -36,7 +49,7 @@ wss.on('connection', ws => {
 
     ws.send(JSON.stringify({
         type: 'connected',
-        message: '✅ Connected to BLS Visa Watcher Server'
+        message: '✅ Connected to BLS appointment watcher.'
     }));
 
     ws.on('close', () => {
@@ -45,51 +58,58 @@ wss.on('connection', ws => {
     });
 });
 
-// 🌐 Page to monitor
 const BLS_URL = 'https://morocco.blsportugal.com/MAR/bls/VisaApplicationStatus';
-const KEYWORD = 'appointment'; // keyword to look for
 
-// 🔍 Function to check the BLS page
+// 🔍 Check for appointments
 async function checkForSlots() {
     try {
         const res = await axios.get(BLS_URL);
         const $ = cheerio.load(res.data);
         const bodyText = $('body').text().toLowerCase();
 
-        if (bodyText.includes(KEYWORD)) {
-            console.log('🎯 Keyword found! Sending alerts...');
+        // Look for any known negative phrases
+        const isNegative = NEGATIVE_PATTERNS.some(pattern => bodyText.includes(pattern));
 
-            // Send to all connected WebSocket clients
-            clients.forEach(ws => {
-                ws.send(JSON.stringify({
-                    type: 'slot_available',
-                    message: '🚨 BLS Visa status updated! "Appointment" found.'
-                }));
-            });
+        if (!isNegative) {
+            if (!lastAlertSent) {
+                console.log('🎯 Real appointment availability detected! Sending alert...');
 
-            // Send Telegram alert
-            await sendTelegramMessage(`🚨 BLS Visa status page updated!\n"Appointment" found:\n${BLS_URL}`);
+                // WebSocket message
+                clients.forEach(ws => {
+                    ws.send(JSON.stringify({
+                        type: 'slot_available',
+                        message: '🚨 Appointment available! Book it now!'
+                    }));
+                });
+
+                // Telegram alert
+                await sendTelegramMessage(`🚨 Visa appointment available!\nBook now:\n${BLS_URL}`);
+
+                lastAlertSent = true;
+            } else {
+                console.log('✅ Appointments still available. No duplicate message.');
+            }
         } else {
-            console.log('🔄 No appointments found yet.');
+            console.log('🔄 No appointments available.');
+            lastAlertSent = false;
         }
     } catch (err) {
-        console.error('❌ Error checking BLS page:', err.message);
+        console.error('❌ Error checking the BLS page:', err.message);
     }
 }
 
-// 🔁 Repeat check every 15 seconds
+// Run every 15 seconds
 setInterval(checkForSlots, 15000);
 
-// 💤 Prevent Render from sleeping
+// Keep Render alive
 setInterval(() => {
     axios.get('https://we-socket-fznm.onrender.com')
-        .then(() => console.log('👀 Self-ping sent to keep server awake'))
+        .then(() => console.log('👀 Self-ping to keep server awake'))
         .catch(err => console.log('❌ Self-ping error:', err.message));
 }, 5 * 60 * 1000);
 
-// Root route
 app.get('/', (req, res) => {
-    res.send('🟢 BLS Visa WebSocket + Telegram Server is running.');
+    res.send('🟢 BLS appointment monitor is running.');
 });
 
 server.listen(PORT, () => {
