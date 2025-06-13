@@ -14,8 +14,9 @@ const BLS_URL = 'https://morocco.blsportugal.com/MAR/bls/VisaApplicationStatus';
 const CHECK_INTERVAL = 15000; // 15 seconds
 
 // Telegram credentials
-const TELEGRAM_BOT_TOKEN = '7962715498:AAH2dZ7teT6m_n98nfxVW3mCkmIzrNeeYUo';
-const TELEGRAM_CHAT_ID = '8063543796';
+const TELEGRAM_BOT_TOKEN = '7757985073:AAGl-mTTiBY50k-D6Cu0mVuSGpIbhtWZ4CI
+';
+const TELEGRAM_CHAT_ID = '845553854';
 
 const NEGATIVE_PATTERNS = [
   'no appointment', 'no slots available', 'not available',
