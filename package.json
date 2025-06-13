@@ -1,6 +1,7 @@
 {
   "name": "bls-monitor",
   "version": "1.0.0",
+  "description": "Visa appointment availability monitor for BLS Morocco",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
